@@ -460,8 +460,16 @@ public sealed class PassEngine
             if (ok && gain >= Cost.MinimumGain) accepted.Add((cycle, gain)); else report.Rejected++;
         }
         accepted.Sort((x, y) => x.Gain != y.Gain ? y.Gain.CompareTo(x.Gain) : x.Edges[0].CompareTo(y.Edges[0]));
+        // Adults and empty beds per home as the applied moves leave them, for the breeding rule below.
+        var adults = new int[s.Homes.Length]; var free = (int[])s.HomeFree.Clone();
+        foreach (int home in s.AdultHome) adults[home]++;
         foreach (var (edges, gain) in accepted)
         {
+            // A chain moves one adult out of its first home and one into an empty bed of its last. It is turned down if
+            // it would leave the colony fewer homes that can breed (two adults and an empty bed); a cycle changes neither.
+            int start = _moves[edges[0]][1], end = _moves[edges[edges.Length - 1]][2]; bool chain = start != end;
+            if (chain && Breeding(adults[start] - 1, free[start] + 1) + Breeding(adults[end] + 1, free[end] - 1)
+                       < Breeding(adults[start], free[start]) + Breeding(adults[end], free[end])) { report.Rejected++; continue; }
             var moves = new Move[edges.Length];
             for (int i = 0; i < edges.Length; i++)
             {
@@ -471,6 +479,7 @@ public sealed class PassEngine
             if (_world.ApplyCycle(moves))
             {
                 report.Applied++;
+                if (chain) { adults[start]--; free[start]++; adults[end]++; free[end]--; }
                 foreach (int e in edges)
                 {
                     // Repaired only if the new home reaches work: a cut-off beaver can be moved along and stay cut off.
@@ -487,6 +496,9 @@ public sealed class PassEngine
         State.QueryBudget = 0; State.SolveBudget = 0; State.Stage = 0; State.Cursor = 0; State.District = 0; State.Row = 1; Forget();
         LastReport = report; Reported?.Invoke(report);
     }
+
+    // A home can have a kit when at least two adults live in it and it has an empty bed.
+    private static int Breeding(int adults, int free) => adults >= 2 && free >= 1 ? 1 : 0;
 
     // Keeps this pass's fresh route costs for homes outside the workplace's Near row, which the next pass would only
     // estimate again: without them a move the check turned down comes back every day. A newer cost replaces an older one

@@ -31,6 +31,8 @@ static class Program
             foreach (var h in Reverse ? Homes.Reverse() : Homes) if (h.Value.Usable && Free(h.Key) > 0) b.AddHome(h.Key, h.Value.District, h.Value.X, h.Value.Y, h.Value.Z, Free(h.Key));
             return b.Build();
         }
+        // Homes with at least two adults and an empty bed.
+        public int BreedingHomes() => Homes.Keys.Count(h => People.Values.Count(p => p.Adult && p.Home == h) >= 2 && Free(h) >= 1);
         public int Free(Guid home) => Homes[home].Capacity - People.Values.Count(p => p.Home == home);
         public Guid DistrictOf(Guid work) => WorkDistrict.TryGetValue(work, out var d) ? d : G(9000);
         // Like the game, a workplace in another district is no job at all.
@@ -319,7 +321,7 @@ static class Program
                 Check(kids.All(k => f.People[k.Key].Home == k.Value), "A child moved");
             }
         });
-        Test("with empty beds, the pass reaches the true optimum (brute force) and never overfills a home", () => {
+        Test("with empty beds, the pass reaches the true optimum (brute force) unless the breeding rule turns a move down", () => {
             for (int seed = 0; seed < 100; seed++)
             {
                 var f = Colony(seed, homes: 3 + seed % 3, adults: 5 + seed % 3, works: 3, children: seed % 3, districts: seed < 60 ? 1 : 2 + seed % 2);
@@ -332,8 +334,10 @@ static class Program
                 }
                 StartHome = f.People.ToDictionary(p => p.Key, p => p.Value.Home);
                 long best = Best(f); var kids = f.People.Values.Where(p => !p.Adult).ToDictionary(p => p.Id, p => p.Home);
-                Run(f);
-                Check(Achieved(f) == best, $"seed {seed}: objective {Achieved(f)} but optimum is {best}");
+                int breeding = f.BreedingHomes(); var e = Run(f);
+                // The breeding rule can turn a chain down, and only then may the result fall short of the optimum.
+                Check(e.LastReport.Rejected > 0 ? Achieved(f) >= best : Achieved(f) == best, $"seed {seed}: objective {Achieved(f)} but optimum is {best}");
+                Check(f.BreedingHomes() >= breeding, $"seed {seed}: fewer homes can breed");
                 foreach (var h in f.Homes) Check(f.People.Values.Count(p => p.Home == h.Key) <= h.Value.Capacity, $"seed {seed}: home over capacity");
                 Check(kids.All(k => f.People[k.Key].Home == k.Value), "A child moved");
                 Check(f.People.Values.All(p => f.Homes[p.Home].District == p.District), "Someone crossed districts");
@@ -341,7 +345,7 @@ static class Program
         });
         Test("a worker moves into an empty home beside the workplace, and a second pass changes nothing", () => {
             var f = new Fake(); f.Works[G(500)] = (0, 0, 0);
-            f.Homes[G(1)] = new Home { Capacity = 3, X = 40 };                 // the worker's lodge, far away
+            f.Homes[G(1)] = new Home { Capacity = 2, X = 40 };                 // the worker's lodge, far away and full
             f.Homes[G(2)] = new Home { Capacity = 1, X = 1 };                  // an empty mini lodge beside the workplace
             f.Homes[G(3)] = new Home { Capacity = 1, X = 2, Usable = false };  // a paused one, nearer still than the lodge
             f.People[G(10)] = new Person { Id = G(10), Home = G(1), Work = G(500), District = G(9000) };
@@ -352,6 +356,43 @@ static class Program
             var fp = f.Fingerprint(); Run(f, Reload(e.State)); Check(f.Fingerprint() == fp, "A settled colony was reshuffled");
             // A lone adult is moved too.
             f.People.Remove(G(11)); f.People[G(10)].Home = G(1); Run(f); Check(f.People[G(10)].Home == G(2), "A lone worker stayed far away");
+        });
+        Test("a move into an empty bed is turned down if it leaves fewer homes that can breed", () => {
+            // Two adults and an empty bed can breed: the worker stays, since the lodge beside work has one bed and can't.
+            var f = new Fake(); f.Works[G(500)] = (0, 0, 0);
+            f.Homes[G(1)] = new Home { Capacity = 3, X = 40 }; f.Homes[G(2)] = new Home { Capacity = 1, X = 1 };
+            f.People[G(10)] = new Person { Id = G(10), Home = G(1), Work = G(500), District = G(9000) };
+            f.People[G(11)] = new Person { Id = G(11), Home = G(1), District = G(9000) };
+            var e = Run(f); Check(f.People[G(10)].Home == G(1) && e.LastReport.Rejected == 1, "A breeding home was broken up");
+            // The same move into a two-bed home beside work that already holds an adult makes a new breeding home: allowed.
+            f.Homes[G(2)].Capacity = 3; f.People[G(12)] = new Person { Id = G(12), Home = G(2), District = G(9000) };
+            Run(f); Check(f.People[G(10)].Home == G(2), "A move that keeps the breeding homes was turned down");
+            // Filling the last empty bed of a breeding home is turned down too, unless the mover's home can breed after.
+            var g = new Fake(); g.Works[G(500)] = (0, 0, 0);
+            g.Homes[G(1)] = new Home { Capacity = 1, X = 40 }; g.Homes[G(2)] = new Home { Capacity = 3, X = 1 };
+            g.People[G(10)] = new Person { Id = G(10), Home = G(1), Work = G(500), District = G(9000) };
+            for (int i = 0; i < 2; i++) g.People[G(20 + i)] = new Person { Id = G(20 + i), Home = G(2), District = G(9000) };
+            Run(g); Check(g.People[G(10)].Home == G(1), "The last bed of a breeding home was filled");
+        });
+        Test("passes over colonies with empty beds never leave fewer homes that can breed", () => {
+            int moved = 0;
+            for (int seed = 0; seed < 60; seed++)
+            {
+                var f = Spare(Colony(seed, homes: 30, adults: 70, works: 25, children: 8, districts: 1 + seed % 3), seed, emptyHomes: 4);
+                foreach (var h in f.Homes.Values) if (h.Capacity > 1 && seed % 2 == 0) h.Capacity++;   // more homes that can breed
+                int before = f.BreedingHomes(); var counts = f.AdultCounts(); var kids = f.People.Values.Where(p => !p.Adult).ToDictionary(p => p.Id, p => p.Home);
+                var e = Run(f); var state = e.State;
+                for (int day = 0; day < 3; day++)
+                {
+                    Check(f.BreedingHomes() >= before, $"seed {seed}: homes that can breed fell from {before} to {f.BreedingHomes()}");
+                    foreach (var h in f.Homes) Check(f.People.Values.Count(p => p.Home == h.Key) <= h.Value.Capacity, $"seed {seed}: home over capacity");
+                    before = f.BreedingHomes(); state = Run(f, Reload(state)).State;
+                }
+                Check(kids.All(k => f.People[k.Key].Home == k.Value), "A child moved");
+                if (!f.AdultCounts().OrderBy(x => x.Key).SequenceEqual(counts.OrderBy(x => x.Key))) moved++;
+            }
+            Check(moved >= 30, $"Adults moved into empty beds in only {moved} of 60 colonies");
+            Console.WriteLine($"   60 colonies with empty beds: head counts changed in {moved}, homes that can breed never fewer");
         });
         Test("a badly housed colony gets much shorter commutes and no home changes its head count", () => {
             var f = Colony(1, homes: 90, adults: 240, works: 120, children: 20); double before = f.Total(); var counts = f.AdultCounts();

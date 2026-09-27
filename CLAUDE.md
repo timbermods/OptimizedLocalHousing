@@ -6,7 +6,7 @@ tests in `OptimizedLocalHousing.Tests/`, packaging in `package.ps1`, the website
 PR → merge.
 
 - **Tests (what CI runs, `.github/workflows/tests.yml`, SDK 8):** `dotnet run --project OptimizedLocalHousing.Tests -c Release`
-  must end with `43 checks passed.` (44 exist; the compiled-adapter check needs the built mod and the game, so it runs
+  must end with `45 checks passed.` (46 exist; the compiled-adapter check needs the built mod and the game, so it runs
   only locally with two extra arguments; see `DEVELOPING.md`).
 - **Build and package** (needs a local Timberborn install; never done in CI): see `DEVELOPING.md`, then `./package.ps1`.
 
@@ -152,7 +152,7 @@ When asked to "update the website for the latest release, consistent with the de
    `ul.checks.never`; tested / not yet → `.status-grid` `ul.checks` / `ul.checks.open`; a log message → a troubleshooting
    table row plus a `details.q` with an `id`; a question → `details.q` with `div.answer` in the right FAQ group;
    evidence → `dl.fields`; install steps → `ol.steps`. Don't restyle anything.
-4. Test: `dotnet run --project OptimizedLocalHousing.Tests -c Release` (ends `43 checks passed.`). There is no site
+4. Test: `dotnet run --project OptimizedLocalHousing.Tests -c Release` (ends `45 checks passed.`). There is no site
    test in CI; check the contracts in PRODUCT.md by hand, the release.js hash above, and the seating demo numbers.
 5. Preview: `python -m http.server 8784 -d docs` (background), then open http://localhost:8784/. Capture light, dark
    and a 390px phone. If the personal `impeccable-site-flow` skill is available, use

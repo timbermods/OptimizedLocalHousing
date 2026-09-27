@@ -18,7 +18,8 @@ dotnet run --project OptimizedLocalHousing.Tests -c Release -- OptimizedLocalHou
 ```
 
 The tests cover the solver against brute force, pause/resume at every row, splitting moves into cycles and chains,
-optimality on random colonies with one to three districts, with and without empty beds, route queries that stay inside a district, each district solved on
+optimality on random colonies with one to three districts, with and without empty beds, homes that can breed never
+fewer after a pass, route queries that stay inside a district, each district solved on
 its own (the same homes as a colony of that district alone, in no more ticks), the safety rules in the README,
 stale-world handling, route costs carried from one pass to the next and priced again when they come due,
 determinism between peers, save/reload at every tick of three passes (the first, the next, and the one where the
@@ -44,7 +45,9 @@ the installed game's component blacklist. Omitting the two arguments skips the c
    ticks instead of 157 for four districts of 300 adults), and reaches the same optimum.
 4. **Verify.** Every proposed move is re-priced with fresh routes. A whole cycle of moves is dropped if it would
    leave a beaver who can reach work today unable to, and each cycle or chain must save at least half a route-cost
-   unit in total. The fresh costs of homes beyond the 32 nearest are remembered in place of estimates, so a move that was
+   unit in total. A chain is also dropped if it would leave the colony fewer homes that can breed (at least two
+   adults and an empty bed). The solver doesn't know this rule, so a chain it drops is proposed again the next day
+   and dropped again, until the colony changes. The fresh costs of homes beyond the 32 nearest are remembered in place of estimates, so a move that was
    turned down is not proposed again every day (anything proposed is still re-priced first). A remembered cost is
    used for seven passes. The seventh prices it again, and keeps it, if one of that workplace's workers lives in
    the home or if there was no route (so a road that comes back is noticed); otherwise it lapses to the estimate.
