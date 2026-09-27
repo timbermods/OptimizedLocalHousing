@@ -88,7 +88,7 @@ public sealed class HousingService : ILoadableSingleton, IUnloadableSingleton, I
         foreach (var district in _districts.FinishedDistrictCenters)
         {
             foreach (var beaver in district.DistrictPopulation.Beavers) AddAdult(builder, beaver);
-            // Every usable home in the district with an empty bed, so an adult can move into it.
+            // Every usable home in the district, so an adult can move into an empty bed.
             var registry = district.GetComponent<DistrictBuildingRegistry>();
             if (registry) foreach (var home in registry.GetEnabledBuildingsInstant<Dwelling>()) AddHome(builder, home, Id(district));
         }
@@ -100,7 +100,7 @@ public sealed class HousingService : ILoadableSingleton, IUnloadableSingleton, I
         if (!UsableHome(home) || Id(home.GetComponent<DistrictBuilding>()?.District) != districtId) return false;
         var block = home.GetComponent<BlockObject>(); if (!block) return false;
         var at = block.Coordinates;
-        builder.AddHome(Id(home), districtId, at.x, at.y, at.z, home.MaxBeavers - home.NumberOfDwellers);
+        builder.AddHome(Id(home), districtId, at.x, at.y, at.z, home.MaxBeavers, home.NumberOfAdultDwellers, home.NumberOfChildDwellers);
         return true;
     }
 
@@ -160,11 +160,13 @@ public sealed class HousingService : ILoadableSingleton, IUnloadableSingleton, I
             change[m.To] = (change.TryGetValue(m.To, out var in1) ? in1 : 0) + 1;
         }
         // A cycle leaves every home's head count unchanged, and a chain ends in a bed that was empty at the snapshot; this
-        // guards against a newborn or a homeless beaver taking that bed meanwhile.
+        // guards against a newborn or a homeless beaver taking that bed meanwhile, or an adult a child's bed (the game
+        // would move an adult out of a home with more adults than adult beds).
         foreach (var pair in change)
         {
             var home = Component<Dwelling>(pair.Key);
             if (!home || home.NumberOfDwellers + pair.Value > home.MaxBeavers) return false;
+            if (pair.Value > 0 && home.NumberOfAdultDwellers + pair.Value > home.AdultSlots) return false;
         }
         try
         {

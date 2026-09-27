@@ -26,7 +26,10 @@ public sealed class Snapshot
     public int[] AdultWork = new int[0];         // index into Works, -1 when there is no usable job
     public Guid[] Homes = new Guid[0];           // ascending by ID; homes with an adult in them or an empty bed
     public Guid[] HomeDistrict = new Guid[0];
-    public int[] HomeFree = new int[0];          // empty beds per home
+    public int[] HomeFree = new int[0];          // empty beds per home that an adult may take (HomeRules.FreeForAdults)
+    public int[] HomeBeds = new int[0];          // beds per home, and the adults and children living in it, all from the game
+    public int[] HomeAdults = new int[0];
+    public int[] HomeChildren = new int[0];
     public int[] HomePos = new int[0];           // x, y, z per home
     public Guid[] Works = new Guid[0];           // ascending by ID
     public int[] WorkPos = new int[0];
@@ -43,10 +46,13 @@ public sealed class SnapshotBuilder
 {
     private readonly List<(Guid Id, Guid Home, Guid Work, Guid District)> _adults = new List<(Guid, Guid, Guid, Guid)>();
     private readonly HashSet<Guid> _seen = new HashSet<Guid>();
-    private readonly Dictionary<Guid, (Guid District, int X, int Y, int Z, int Free)> _homes = new Dictionary<Guid, (Guid, int, int, int, int)>();
+    private readonly Dictionary<Guid, (Guid District, int X, int Y, int Z, int Beds, int Adults, int Children)> _homes =
+        new Dictionary<Guid, (Guid, int, int, int, int, int, int)>();
     private readonly Dictionary<Guid, (int X, int Y, int Z)> _works = new Dictionary<Guid, (int, int, int)>();
-    // free: the home's empty beds. A home is kept when an adult lives in it, or it has an empty bed in a district with adults.
-    public void AddHome(Guid id, Guid district, int x, int y, int z, int free = 0) => _homes[id] = (district, x, y, z, Math.Max(free, 0));
+    // beds, adults, children: the home's beds and who lives in it, as the game counts them. A home is kept when an adult
+    // lives in it, or it has a bed an adult may take in a district with adults.
+    public void AddHome(Guid id, Guid district, int x, int y, int z, int beds = 0, int adults = 0, int children = 0) =>
+        _homes[id] = (district, x, y, z, beds, adults, children);
     public void AddWork(Guid id, int x, int y, int z) => _works[id] = (x, y, z);
     public void AddAdult(Guid id, Guid home, Guid work, Guid district) { if (_seen.Add(id)) _adults.Add((id, home, work, district)); }
     public Snapshot Build()
@@ -58,14 +64,17 @@ public sealed class SnapshotBuilder
         var homeIds = new SortedSet<Guid>(); var workIds = new SortedSet<Guid>();
         var districts = new HashSet<Guid>();   // looked up only, never enumerated
         foreach (var a in adults) { homeIds.Add(a.Home); districts.Add(a.District); if (a.Work != Guid.Empty && _works.ContainsKey(a.Work)) workIds.Add(a.Work); }
-        foreach (var h in _homes) if (h.Value.Free > 0 && districts.Contains(h.Value.District)) homeIds.Add(h.Key);
+        foreach (var h in _homes)
+            if (HomeRules.FreeForAdults(h.Value.Beds, h.Value.Adults, h.Value.Children) > 0 && districts.Contains(h.Value.District)) homeIds.Add(h.Key);
         var s = new Snapshot { Homes = new Guid[homeIds.Count], Works = new Guid[workIds.Count] };
         var homeIndex = new Dictionary<Guid, int>(); var workIndex = new Dictionary<Guid, int>();
         s.HomeDistrict = new Guid[s.Homes.Length]; s.HomePos = new int[s.Homes.Length * 3]; s.HomeFree = new int[s.Homes.Length];
+        s.HomeBeds = new int[s.Homes.Length]; s.HomeAdults = new int[s.Homes.Length]; s.HomeChildren = new int[s.Homes.Length];
         int n = 0;
         foreach (var id in homeIds)
         {
-            var h = _homes[id]; s.Homes[n] = id; s.HomeDistrict[n] = h.District; s.HomeFree[n] = h.Free;
+            var h = _homes[id]; s.Homes[n] = id; s.HomeDistrict[n] = h.District; s.HomeFree[n] = HomeRules.FreeForAdults(h.Beds, h.Adults, h.Children);
+            s.HomeBeds[n] = h.Beds; s.HomeAdults[n] = h.Adults; s.HomeChildren[n] = h.Children;
             s.HomePos[n * 3] = h.X; s.HomePos[n * 3 + 1] = h.Y; s.HomePos[n * 3 + 2] = h.Z; homeIndex[id] = n++;
         }
         s.WorkPos = new int[s.Works.Length * 3]; n = 0;
@@ -83,6 +92,22 @@ public sealed class SnapshotBuilder
         }
         return s;
     }
+}
+
+// How the game fills a home (Timberborn.DwellingSystem.Dwelling) and when a home can have a kit (the Folktails'
+// Timberborn.Reproduction.ProcreationHouse). A third of a home's beds, rounded down, are for children, the rest for adults.
+public static class HomeRules
+{
+    public static int ChildSlots(int beds) => beds / 3;
+    public static int AdultSlots(int beds) => beds - ChildSlots(beds);
+    // Empty beds an adult can move into and keep. The game moves adults out of a home with more adults than adult beds,
+    // so an adult never takes a child's bed.
+    public static int FreeForAdults(int beds, int adults, int children) =>
+        Math.Max(0, Math.Min(beds - adults - children, AdultSlots(beds) - adults));
+    // A home can have a kit when two of its adults can meet there, a bed is free, and it has fewer children than its
+    // child beds and than half its adults (rounded down).
+    public static bool CanBreed(int beds, int adults, int children) =>
+        adults >= 2 && adults + children < beds && children < ChildSlots(beds) && children < adults / 2;
 }
 
 public sealed class PassState
@@ -460,16 +485,15 @@ public sealed class PassEngine
             if (ok && gain >= Cost.MinimumGain) accepted.Add((cycle, gain)); else report.Rejected++;
         }
         accepted.Sort((x, y) => x.Gain != y.Gain ? y.Gain.CompareTo(x.Gain) : x.Edges[0].CompareTo(y.Edges[0]));
-        // Adults and empty beds per home as the applied moves leave them, for the breeding rule below.
-        var adults = new int[s.Homes.Length]; var free = (int[])s.HomeFree.Clone();
-        foreach (int home in s.AdultHome) adults[home]++;
+        // Adults per home as the applied moves leave them, for the breeding rule below.
+        var adults = (int[])s.HomeAdults.Clone();
         foreach (var (edges, gain) in accepted)
         {
             // A chain moves one adult out of its first home and one into an empty bed of its last. It is turned down if
-            // it would leave the colony fewer homes that can breed (two adults and an empty bed); a cycle changes neither.
+            // it would leave the colony fewer homes that can breed (HomeRules.CanBreed); a cycle changes neither.
             int start = _moves[edges[0]][1], end = _moves[edges[edges.Length - 1]][2]; bool chain = start != end;
-            if (chain && Breeding(adults[start] - 1, free[start] + 1) + Breeding(adults[end] + 1, free[end] - 1)
-                       < Breeding(adults[start], free[start]) + Breeding(adults[end], free[end])) { report.Rejected++; continue; }
+            if (chain && Breeding(s, start, adults[start] - 1) + Breeding(s, end, adults[end] + 1)
+                       < Breeding(s, start, adults[start]) + Breeding(s, end, adults[end])) { report.Rejected++; continue; }
             var moves = new Move[edges.Length];
             for (int i = 0; i < edges.Length; i++)
             {
@@ -479,7 +503,7 @@ public sealed class PassEngine
             if (_world.ApplyCycle(moves))
             {
                 report.Applied++;
-                if (chain) { adults[start]--; free[start]++; adults[end]++; free[end]--; }
+                if (chain) { adults[start]--; adults[end]++; }
                 foreach (int e in edges)
                 {
                     // Repaired only if the new home reaches work: a cut-off beaver can be moved along and stay cut off.
@@ -497,8 +521,7 @@ public sealed class PassEngine
         LastReport = report; Reported?.Invoke(report);
     }
 
-    // A home can have a kit when at least two adults live in it and it has an empty bed.
-    private static int Breeding(int adults, int free) => adults >= 2 && free >= 1 ? 1 : 0;
+    private static int Breeding(Snapshot s, int home, int adults) => HomeRules.CanBreed(s.HomeBeds[home], adults, s.HomeChildren[home]) ? 1 : 0;
 
     // Keeps this pass's fresh route costs for homes outside the workplace's Near row, which the next pass would only
     // estimate again: without them a move the check turned down comes back every day. A newer cost replaces an older one

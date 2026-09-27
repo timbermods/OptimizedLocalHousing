@@ -23,17 +23,26 @@ static class Program
             foreach (var p in people)
             {
                 if (!p.Adult || !Homes.TryGetValue(p.Home, out var h) || !h.Usable) continue;
-                b.AddHome(p.Home, h.District, h.X, h.Y, h.Z, Free(p.Home));
+                b.AddHome(p.Home, h.District, h.X, h.Y, h.Z, h.Capacity, AdultsIn(p.Home), ChildrenIn(p.Home));
                 var work = Job(p); if (work != Guid.Empty) b.AddWork(work, Works[work].X, Works[work].Y, Works[work].Z);
                 b.AddAdult(p.Id, p.Home, work, p.District);
             }
-            // Like the game, every usable home with an empty bed, lived in or not.
-            foreach (var h in Reverse ? Homes.Reverse() : Homes) if (h.Value.Usable && Free(h.Key) > 0) b.AddHome(h.Key, h.Value.District, h.Value.X, h.Value.Y, h.Value.Z, Free(h.Key));
+            // Like the game, every usable home, lived in or not.
+            foreach (var h in Reverse ? Homes.Reverse() : Homes) if (h.Value.Usable) b.AddHome(h.Key, h.Value.District, h.Value.X, h.Value.Y, h.Value.Z, h.Value.Capacity, AdultsIn(h.Key), ChildrenIn(h.Key));
             return b.Build();
         }
-        // Homes with at least two adults and an empty bed.
-        public int BreedingHomes() => Homes.Keys.Count(h => People.Values.Count(p => p.Adult && p.Home == h) >= 2 && Free(h) >= 1);
-        public int Free(Guid home) => Homes[home].Capacity - People.Values.Count(p => p.Home == home);
+        // Like the game (Dwelling): a third of the beds, rounded down, are for children, the rest for adults.
+        public int AdultsIn(Guid home) => People.Values.Count(p => p.Adult && p.Home == home);
+        public int ChildrenIn(Guid home) => People.Values.Count(p => !p.Adult && p.Home == home);
+        public int AdultBeds(Guid home) => Homes[home].Capacity - Homes[home].Capacity / 3;
+        // Like the Folktails' ProcreationHouse: two adults, a free bed, and fewer children than the child beds and than
+        // half the adults.
+        public bool CanBreed(Guid home)
+        {
+            int adults = AdultsIn(home), children = ChildrenIn(home), beds = Homes[home].Capacity;
+            return adults >= 2 && adults + children < beds && children < beds / 3 && children < adults / 2;
+        }
+        public int BreedingHomes() => Homes.Keys.Count(CanBreed);
         public Guid DistrictOf(Guid work) => WorkDistrict.TryGetValue(work, out var d) ? d : G(9000);
         // Like the game, a workplace in another district is no job at all.
         public Guid Job(Person p) => p.Work != Guid.Empty && Works.ContainsKey(p.Work) && DistrictOf(p.Work) == p.District ? p.Work : Guid.Empty;
@@ -57,6 +66,8 @@ static class Program
                 delta[m.From] = delta.GetValueOrDefault(m.From) - 1; delta[m.To] = delta.GetValueOrDefault(m.To) + 1;
             }
             foreach (var d in delta) if (People.Values.Count(p => p.Home == d.Key) + d.Value > Homes[d.Key].Capacity) return false;
+            // The game moves an adult out of a home with more adults than adult beds, so the adapter never makes one.
+            foreach (var d in delta) if (d.Value > 0 && AdultsIn(d.Key) + d.Value > AdultBeds(d.Key)) return false;
             foreach (var m in cycle) People[m.Adult].Home = m.To;
             Applied.Add(string.Join(",", cycle.Select(m => $"{m.Adult.ToString()[..4]}>{m.To.ToString()[..4]}")));
             return true;
@@ -202,7 +213,8 @@ static class Program
     {
         var adults = f.People.Values.Where(p => p.Adult).OrderBy(p => p.Id).ToList(); int n = adults.Count;
         var homes = f.Homes.Keys.OrderBy(k => k).ToList();
-        var room = homes.Select(h => f.Homes[h].Usable ? f.Homes[h].Capacity - f.People.Values.Count(p => !p.Adult && p.Home == h) : 0).ToArray();
+        // An adult keeps its bed, and may take an empty one while the home has adult beds to spare.
+        var room = homes.Select(h => f.Homes[h].Usable ? Math.Max(f.AdultsIn(h), Math.Min(f.Homes[h].Capacity - f.ChildrenIn(h), f.AdultBeds(h))) : 0).ToArray();
         long best = long.MaxValue;
         long Cost1(Person a, Guid bed) => (f.Job(a) != Guid.Empty ? Cost.Fixed(f.Route(bed, a.Work)) : 0) - (bed == a.Home ? Cost.StayBonus : 0);
         void Go(int k, long sum)
@@ -367,12 +379,23 @@ static class Program
             // The same move into a two-bed home beside work that already holds an adult makes a new breeding home: allowed.
             f.Homes[G(2)].Capacity = 3; f.People[G(12)] = new Person { Id = G(12), Home = G(2), District = G(9000) };
             Run(f); Check(f.People[G(10)].Home == G(2), "A move that keeps the breeding homes was turned down");
-            // Filling the last empty bed of a breeding home is turned down too, unless the mover's home can breed after.
+            // The empty bed of a three-bed home with two adults is a child's bed: the worker only swaps with an adult there,
+            // so the home still breeds.
             var g = new Fake(); g.Works[G(500)] = (0, 0, 0);
             g.Homes[G(1)] = new Home { Capacity = 1, X = 40 }; g.Homes[G(2)] = new Home { Capacity = 3, X = 1 };
             g.People[G(10)] = new Person { Id = G(10), Home = G(1), Work = G(500), District = G(9000) };
             for (int i = 0; i < 2; i++) g.People[G(20 + i)] = new Person { Id = G(20 + i), Home = G(2), District = G(9000) };
-            Run(g); Check(g.People[G(10)].Home == G(1), "The last bed of a breeding home was filled");
+            Run(g); Check(g.AdultsIn(G(2)) == 2 && g.AdultsIn(G(1)) == 1 && g.CanBreed(G(2)), "An adult took the child's bed of a breeding home");
+            // The game's rule: a home with as many children as half its adults can't breed, so a worker may leave it.
+            var h = new Fake(); h.Works[G(500)] = (0, 0, 0);
+            h.Homes[G(1)] = new Home { Capacity = 6, X = 40 }; h.Homes[G(2)] = new Home { Capacity = 1, X = 1 };
+            h.People[G(10)] = new Person { Id = G(10), Home = G(1), Work = G(500), District = G(9000) };
+            h.People[G(11)] = new Person { Id = G(11), Home = G(1), District = G(9000) };
+            h.People[G(12)] = new Person { Id = G(12), Home = G(1), District = G(9000), Adult = false };
+            e = Run(h); Check(h.People[G(10)].Home == G(2) && e.LastReport.Rejected == 0, "A worker was kept in a home that can't breed");
+            // Without the child it can: the move is turned down.
+            h.People.Remove(G(12)); h.People[G(10)].Home = G(1);
+            e = Run(h); Check(h.People[G(10)].Home == G(1) && e.LastReport.Rejected == 1, "A breeding home of six beds was broken up");
         });
         Test("passes over colonies with empty beds never leave fewer homes that can breed", () => {
             int moved = 0;
@@ -380,13 +403,17 @@ static class Program
             {
                 var f = Spare(Colony(seed, homes: 30, adults: 70, works: 25, children: 8, districts: 1 + seed % 3), seed, emptyHomes: 4);
                 foreach (var h in f.Homes.Values) if (h.Capacity > 1 && seed % 2 == 0) h.Capacity++;   // more homes that can breed
-                int before = f.BreedingHomes(); var counts = f.AdultCounts(); var kids = f.People.Values.Where(p => !p.Adult).ToDictionary(p => p.Id, p => p.Home);
+                int before = f.BreedingHomes(); var counts = f.AdultCounts(); var adultsBefore = f.Homes.Keys.ToDictionary(h => h, f.AdultsIn); var kids = f.People.Values.Where(p => !p.Adult).ToDictionary(p => p.Id, p => p.Home);
                 var e = Run(f); var state = e.State;
                 for (int day = 0; day < 3; day++)
                 {
+                    // Nothing changes between capture and apply here, so a stale chain means the engine offered a bed the
+                    // game would refuse, such as a child's bed.
+                    Check(e.LastReport.Stale == 0, $"seed {seed}: {e.LastReport.Stale} stale on day {day}");
                     Check(f.BreedingHomes() >= before, $"seed {seed}: homes that can breed fell from {before} to {f.BreedingHomes()}");
                     foreach (var h in f.Homes) Check(f.People.Values.Count(p => p.Home == h.Key) <= h.Value.Capacity, $"seed {seed}: home over capacity");
-                    before = f.BreedingHomes(); state = Run(f, Reload(state)).State;
+                    foreach (var h in f.Homes.Keys) Check(f.AdultsIn(h) <= Math.Max(adultsBefore[h], f.AdultBeds(h)), $"seed {seed}: an adult took a child's bed");
+                    before = f.BreedingHomes(); adultsBefore = f.Homes.Keys.ToDictionary(h => h, f.AdultsIn); e = Run(f, Reload(state)); state = e.State;
                 }
                 Check(kids.All(k => f.People[k.Key].Home == k.Value), "A child moved");
                 if (!f.AdultCounts().OrderBy(x => x.Key).SequenceEqual(counts.OrderBy(x => x.Key))) moved++;

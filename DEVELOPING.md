@@ -39,14 +39,18 @@ the installed game's component blacklist. Omitting the two arguments skips the c
    route search never leaves a district. Homes farther away are estimated, and any move to one is re-checked
    with a real route before it is allowed.
 3. **Solve.** The optimal way to reassign the adults to the district's beds: the ones adults occupy today and the
-   empty ones (the Hungarian algorithm, with more beds than adults). Children keep their beds, so a home's empty beds
-   are its beds minus everyone living there. Nobody moves between districts, so each district is solved on its own, one after another. In a
+   empty ones (the Hungarian algorithm, with more beds than adults). Children keep their beds. As in the game, a
+   third of a home's beds (rounded down) are for children and the rest for adults, and the game moves an adult out of
+   a home with more adults than adult beds. So the empty beds an adult may take are the free beds, but no more than
+   the adult beds left (`HomeRules.FreeForAdults`). Nobody moves between districts, so each district is solved on its own, one after another. In a
    colony with several districts that takes far fewer ticks and far less memory than solving them as one (47 solve
    ticks instead of 157 for four districts of 300 adults), and reaches the same optimum.
 4. **Verify.** Every proposed move is re-priced with fresh routes. A whole cycle of moves is dropped if it would
    leave a beaver who can reach work today unable to, and each cycle or chain must save at least half a route-cost
-   unit in total. A chain is also dropped if it would leave the colony fewer homes that can breed (at least two
-   adults and an empty bed). The solver doesn't know this rule, so a chain it drops is proposed again the next day
+   unit in total. A chain is also dropped if it would leave the colony fewer homes that can breed. The rule is the
+   Folktails' (`ProcreationHouse`, `HomeRules.CanBreed`): at least two adults, a free bed, and fewer children than
+   the home's child beds and than half its adults, rounded down. The game then rolls an 18.75% chance each time an
+   adult comes home. The solver doesn't know this rule, so a chain it drops is proposed again the next day
    and dropped again, until the colony changes. The fresh costs of homes beyond the 32 nearest are remembered in place of estimates, so a move that was
    turned down is not proposed again every day (anything proposed is still re-priced first). A remembered cost is
    used for seven passes. The seventh prices it again, and keeps it, if one of that workplace's workers lives in
