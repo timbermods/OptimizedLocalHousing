@@ -34,8 +34,8 @@ Search for `[OptimizedLocalHousing]`: there is one line at startup and one after
 
 - **The whole colony, not each beaver.** One beaver may walk a little farther so everyone together walks less.
   Each district is solved exactly, with the game's own route costs, so stairs, platforms and ziplines count.
-- **Every home keeps the same number of adults.** Homes never overfill and breeding is untouched. Empty beds are
-  left for the game to fill.
+- **Breeding is protected.** Adults can move into empty beds near work, but they take only adult beds, and never
+  in a way that leaves fewer homes able to have a kit. Homes never overfill.
 - **Children never move.** Neither do beavers in paused, blocked or automation-off homes, and nobody moves into one.
 - **Nobody crosses districts, and nobody is made homeless.**
 - **Commutes stay possible.** A beaver who can reach work is never moved to a home that can't. One who can't is
@@ -49,8 +49,8 @@ Search for `[OptimizedLocalHousing]`: there is one line at startup and one after
 
 ## Results
 
-A real 266-beaver colony (222 employed adults, 89 homes), replayed through the pass engine with straight-line
-distance standing in for route cost:
+A real 266-beaver colony (222 employed adults, 89 homes), replayed through the pass engine with every home
+keeping its number of adults and straight-line distance standing in for route cost:
 
 | | Average commute |
 |---|---|
@@ -67,8 +67,8 @@ That pass took 147 ticks and rehomed 182 beavers in 20 cycles. A second pass cha
 - **Played:** the 1.0 code ran 16 passes in a row on the maintainer's colony (about 350 adults, 104 homes, 167
   workplaces), with no errors, warnings or rollbacks. That included one hosted co-op session with a second player:
   about 11,000 ticks, 15 passes and no desync in the host's log.
-- **Tested, not played:** the 1.1 code. 41 automated checks cover it; 40 run on every change.
-- **Not tried yet:** a live two-player session on 1.1, the second player's side of a co-op session, frame-time
+- **Tested, not played:** the 1.1 and 1.2 code. 46 automated checks cover it; 45 run on every change.
+- **Not tried yet:** a live two-player session on 1.1 or 1.2, the second player's side of a co-op session, frame-time
   impact, the Iron Teeth faction, systems other than Windows, and Timber Together in a live session (its code was
   checked against this mod's, not played with it).
 

@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Optimized Local Housing: shorter beaver commutes for Timberborn</title>
-<meta name="description" content="A Timberborn 1.1 mod that re-houses the adult beavers once a day so the whole colony's home-to-work walk is as short as the beds allow. Every home keeps its adults, and children never move.">
+<meta name="description" content="A Timberborn 1.1 mod that re-houses the adult beavers once a day so the whole colony's home-to-work walk is as short as the beds allow. Adults can move into empty beds, breeding is protected, and children never move.">
 <meta property="og:title" content="Optimized Local Housing for Timberborn">
-<meta property="og:description" content="The shortest total walk the beds allow: once a day it solves where each adult beaver should live, keeping every home's adults and never moving children.">
+<meta property="og:description" content="The shortest total walk the beds allow: once a day it solves where each adult beaver should live, protecting breeding and never moving children.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#e6e1d6">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -40,14 +40,14 @@
       <p class="lead">A Timberborn 1.1 mod. Once a day, it moves adult beavers into the homes that make the colony's total walk to work as short as it can be. Beds are limited, so not everyone lives next door to work. Together, they walk the least.</p>
       <ul class="facts">
         <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="7" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="17" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 9l2 5.5M15.5 9l-2 5.5M9 7h6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span><b>The whole colony, not each beaver.</b> One beaver may walk a little farther so that everyone together walks less.</span></li>
-        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="15.5" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span><b>Every home keeps its adults, and children never move.</b> Breeding is untouched. Empty beds are left to the game.</span></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="15.5" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span><b>Breeding is protected, and children never move.</b> Adults can move into empty beds near work, but never in a way that leaves fewer homes able to have a kit.</span></li>
         <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><b>Once a day, spread over many ticks.</b> Nothing to set, no menu. It needs no other mods.</span></li>
       </ul>
       <div class="btn-row">
         <a class="btn btn-primary" href="https://github.com/timbermods/OptimizedLocalHousing/releases/latest" data-release-href="download"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M9 2v10M4.5 7.5L9 12l4.5-4.5M3 15.5h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download <span data-release="tag">v1.2.0</span></span></a>
         <a class="btn btn-ghost" href="install.html">Install guide</a>
       </div>
-      <p class="status-note" role="note" data-release-pinned="1.1.1"><strong>Stable.</strong> It ran 16 passes in a row in a live game, including a hosted co-op session, with no errors. This release's newer changes are covered by automated tests but haven't been played yet. <a href="#status">What is tested, and what isn't</a></p>
+      <p class="status-note" role="note" data-release-pinned="1.2.0"><strong>Stable.</strong> It ran 16 passes in a row in a live game, including a hosted co-op session, with no errors. This release's newer changes are covered by automated tests but haven't been played yet. <a href="#status">What is tested, and what isn't</a></p>
     </div>
 
     <figure class="plan stock pinned" data-seating>
@@ -128,7 +128,7 @@
     <ul class="rules-key">
       <li><div><h3>Optimal, not first-come-first-served</h3><p>Each district is solved exactly with the Hungarian algorithm. The colony's total commute is the smallest the rules allow.</p></div></li>
       <li><div><h3>Real routes, not straight lines</h3><p>Homes are priced with the game's own route cost, so stairs, platforms and ziplines count. Each workplace checks real routes to the 32 nearest homes in its district.</p></div></li>
-      <li><div><h3>Families and breeding stay safe</h3><p>Every home keeps exactly the same number of adults, and children never move. Beds for babies stay where they are.</p></div></li>
+      <li><div><h3>Families and breeding stay safe</h3><p>Children never move. Adults take only adult beds, and a move is turned down if it would leave fewer homes able to have a kit.</p></div></li>
       <li><div><h3>No pointless shuffling</h3><p>Beavers move only when the rearrangement saves at least one route-cost unit for each beaver moved. Once a colony is arranged, another pass changes nothing.</p></div></li>
       <li><div><h3>Smooth by design</h3><p>The work is spread over many ticks, a little at a time, so there is no long freeze. A large colony does more per tick to finish within the daytime; only the very largest take longer.</p></div></li>
       <li><div><h3>Built with co-op in mind</h3><p>Every player's game should make the same moves, even across a save, a reload or a mid-pass join. <a href="#status">What has been played</a></p></div></li>
@@ -145,14 +145,14 @@
     </div>
     <div class="two-col">
       <ol class="steps">
-        <li><strong>Capture</strong><p>Every housed adult beaver, its home and its assigned workplace, in one quick snapshot.</p></li>
+        <li><strong>Capture</strong><p>Every housed adult beaver, its home and its assigned workplace, and every empty bed, in one quick snapshot.</p></li>
         <li><strong>Price</strong><p>Real route costs from each workplace to its 32 nearest homes in its district. Farther homes are estimated.</p></li>
-        <li><strong>Solve</strong><p>The best way to reassign the adults to the beds adults use today, one district at a time.</p></li>
-        <li><strong>Verify</strong><p>Every proposed move is priced again with fresh routes. A cycle of moves is dropped if it would cut a beaver off from work, or if it saves too little.</p></li>
-        <li><strong>Apply</strong><p>Whole cycles of moves are applied in a single tick, and rolled back if the game refuses any of them.</p></li>
+        <li><strong>Solve</strong><p>The best way to reassign the adults to the district's beds, empty ones included, one district at a time.</p></li>
+        <li><strong>Verify</strong><p>Every proposed move is priced again with fresh routes. Moves are dropped if they would cut a beaver off from work, save too little, or leave fewer homes able to have a kit.</p></li>
+        <li><strong>Apply</strong><p>Each cycle or chain of moves is applied in a single tick, and rolled back if the game refuses any of them.</p></li>
       </ol>
       <figure class="cycle stock pinned">
-        <svg viewBox="0 0 360 290" role="img" aria-label="The move cycle from the seating plan above: Birch moves from Home B to Home A, Sorrel from Home A to Home C, and Maple from Home C to Home B, so every home keeps its number of adults.">
+        <svg viewBox="0 0 360 290" role="img" aria-label="The move cycle from the seating plan above: Birch moves from Home B to Home A, Sorrel from Home A to Home C, and Maple from Home C to Home B, so each home keeps its number of beavers.">
           <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--blue)"/></marker></defs>
           <g fill="none" stroke="var(--blue)" stroke-width="1.4" stroke-linecap="round" marker-end="url(#arr)">
             <path d="M150 88 Q 112 120 84 180"/>
@@ -171,7 +171,7 @@
             <g transform="translate(180 266)"><rect x="-36" y="-14" width="72" height="28" rx="1.5" fill="var(--card)" stroke="var(--ink)"/><text x="0" y="5" text-anchor="middle">Sorrel</text></g>
           </g>
         </svg>
-        <figcaption>The pass from the seating plan above, as one move cycle: each beaver takes the next home's bed, so every home keeps the same number of adults. Cycles are applied all at once or not at all.</figcaption>
+        <figcaption>The pass from the seating plan above, as one move cycle: each beaver takes the next home's bed. A chain is the same, but its last beaver takes an empty bed. Each is applied all at once or not at all.</figcaption>
       </figure>
     </div>
   </div>
@@ -214,7 +214,7 @@
           <tbody>
             <tr><th scope="row">When</th><td data-label="Housing Optimize">Once at the start of each day, all at once</td><td data-label="Commute Balancer">Gradually, over days</td><td data-label="Optimized Local Housing">Once a day, spread over ticks</td></tr>
             <tr><th scope="row">How it decides</th><td data-label="Housing Optimize">Unassigns everyone and refills first-come-first-served, nearest first; its author notes the result isn't guaranteed to be the best</td><td data-label="Commute Balancer">Moves a beaver to a closer empty home, or swaps when the benefit outweighs the other beaver's inconvenience</td><td data-label="Optimized Local Housing">Solves each district exactly for the smallest total commute</td></tr>
-            <tr><th scope="row">Adults per home</th><td data-label="Housing Optimize">Refilled</td><td data-label="Commute Balancer">Can change with moves to empty homes</td><td data-label="Optimized Local Housing">Kept exactly; children never move</td></tr>
+            <tr><th scope="row">Adults per home</th><td data-label="Housing Optimize">Refilled</td><td data-label="Commute Balancer">Can change with moves to empty homes</td><td data-label="Optimized Local Housing">Can change with moves to empty beds, never leaving fewer homes able to breed; children never move</td></tr>
             <tr><th scope="row">Track record</th><td data-label="Housing Optimize">Thousands of subscribers</td><td data-label="Commute Balancer">Thousands of subscribers</td><td data-label="Optimized Local Housing">Newer, with far less real-world mileage</td></tr>
           </tbody>
         </table>
@@ -230,7 +230,7 @@
   <div class="wrap">
     <div class="section-head">
       <h2>What one pass does to a real colony</h2>
-      <p>A real 266-beaver save (222 employed adults, 89 homes) replayed through the actual pass engine, with straight-line distance standing in for route cost. Then the live game's own log.</p>
+      <p>A real 266-beaver save (222 employed adults, 89 homes) replayed through the actual pass engine, with every home keeping its number of adults and straight-line distance standing in for route cost. Then the live game's own log.</p>
     </div>
     <div class="results-grid">
       <div class="sheet stock chart-card">
@@ -297,7 +297,7 @@
 <!-- ============ status ============ -->
 <section class="ruled" id="status">
   <div class="wrap">
-    <div class="section-head" data-release-pinned="1.1.1">
+    <div class="section-head" data-release-pinned="1.2.0">
       <h2>What is tested, and what isn't</h2>
       <p>Stable means the evidence below, not that every situation has been tried.</p>
     </div>
@@ -307,14 +307,14 @@
         <ul class="checks">
           <li>16 passes in a row in a live game (about 350 adults, 104 homes, 167 workplaces) with no errors, warnings or rollbacks, on the code the stable release started from.</li>
           <li>A hosted co-op session with a second player on the same version: about 11,000 ticks, 15 passes, and no desync in the host's log.</li>
-          <li>41 automated checks: 40 run on every change, and one runs against the installed game. They cover the solver against brute force, several districts, large colonies, and two players staying in step through saves and reloads.</li>
+          <li>46 automated checks: 45 run on every change, and one runs against the installed game. They cover the solver against brute force, several districts, large colonies, and two players staying in step through saves and reloads.</li>
           <li>The replay of a real colony above.</li>
         </ul>
       </div>
       <div class="stock open-col">
         <h3>Not yet</h3>
         <ul class="checks open">
-          <li>This release's newer changes in a live game: pricing homes by district, remembered route costs, solving each district on its own, and bigger budgets for large colonies. Automated tests cover them.</li>
+          <li>This release's newer changes in a live game: moving adults into empty beds, pricing homes by district, remembered route costs, solving each district on its own, and bigger budgets for large colonies. Automated tests cover them.</li>
           <li>Frame-time impact: the per-tick work is bounded, but a real path query hasn't been timed, nor the bigger budgets a very large colony gets.</li>
           <li>Multiplayer beyond that one hosted session: joining, rehosting, the second player's side, and a live two-player session on this release.</li>
           <li>The Iron Teeth faction (developed and replayed on a Folktails colony).</li>
