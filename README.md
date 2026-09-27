@@ -90,6 +90,10 @@ Build steps, how a pass works inside, costs, saved data and the test list are in
 
 ## Changelog
 
+- **1.2.0**: adults can move into empty beds. A beaver whose workplace has an empty home beside it moves there
+  when that shortens the colony's total walk, so a home's number of adults can now change. A move is turned down if
+  it would leave fewer homes that can breed. Adults only take adult beds, so child beds stay free. Children still never move, and nobody moves into a paused, blocked or automation-off home. A pass that was running when an older save
+  was made starts over once after the update. All co-op players must update together.
 - **1.1.1**: maintenance release. The conflict check now covers only Housing Optimize and Commute Balancer.
   How passes work, and what is saved, are unchanged from 1.1.0. As always, every co-op player installs the same
   version.

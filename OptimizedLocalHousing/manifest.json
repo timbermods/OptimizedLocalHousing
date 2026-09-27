@@ -1,8 +1,8 @@
 {
   "Name": "Optimized Local Housing",
-  "Version": "1.1.1",
+  "Version": "1.2.0",
   "Id": "Kyler.OptimizedLocalHousing",
   "MinimumGameVersion": "1.1.0.0",
-  "Description": "Once a day, re-houses adult beavers so total home-to-workplace travel is as short as possible, using an optimal assignment. Every home keeps its number of adults, children never move. Standalone; install the same version on every multiplayer peer.",
+  "Description": "Once a day, re-houses adult beavers so total home-to-workplace travel is as short as possible, using an optimal assignment. Adults can move into empty beds near work, but never in a way that leaves fewer homes able to breed; children never move. Standalone; install the same version on every multiplayer peer.",
   "RequiredMods": []
 }

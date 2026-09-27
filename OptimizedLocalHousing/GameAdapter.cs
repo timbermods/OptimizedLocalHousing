@@ -33,7 +33,7 @@ public sealed class HousingConfigurator : Configurator
 
 public sealed class ModStarter : IModStarter
 {
-    public void StartMod(IModEnvironment environment) => Debug.Log("[OptimizedLocalHousing] 1.1.1 loaded.");
+    public void StartMod(IModEnvironment environment) => Debug.Log("[OptimizedLocalHousing] 1.2.0 loaded.");
 }
 
 // Thin bridge between the game and PassEngine: it enumerates beavers, answers route queries, and applies moves.
@@ -86,8 +86,22 @@ public sealed class HousingService : ILoadableSingleton, IUnloadableSingleton, I
     {
         var builder = new SnapshotBuilder();
         foreach (var district in _districts.FinishedDistrictCenters)
+        {
             foreach (var beaver in district.DistrictPopulation.Beavers) AddAdult(builder, beaver);
+            // Every usable home in the district, so an adult can move into an empty bed.
+            var registry = district.GetComponent<DistrictBuildingRegistry>();
+            if (registry) foreach (var home in registry.GetEnabledBuildingsInstant<Dwelling>()) AddHome(builder, home, Id(district));
+        }
         return builder.Build();
+    }
+
+    private static bool AddHome(SnapshotBuilder builder, Dwelling home, Guid districtId)
+    {
+        if (!UsableHome(home) || Id(home.GetComponent<DistrictBuilding>()?.District) != districtId) return false;
+        var block = home.GetComponent<BlockObject>(); if (!block) return false;
+        var at = block.Coordinates;
+        builder.AddHome(Id(home), districtId, at.x, at.y, at.z, home.MaxBeavers, home.NumberOfAdultDwellers, home.NumberOfChildDwellers);
+        return true;
     }
 
     private void AddAdult(SnapshotBuilder builder, Beaver beaver)
@@ -97,10 +111,7 @@ public sealed class HousingService : ILoadableSingleton, IUnloadableSingleton, I
         var home = dweller.Home; var district = beaver.GetComponent<Citizen>()?.AssignedDistrict;
         if (!home || !district || !district.Enabled) return;
         var districtId = Id(district);
-        if (!UsableHome(home) || Id(home.GetComponent<DistrictBuilding>()?.District) != districtId) return;
-        var block = home.GetComponent<BlockObject>(); if (!block) return;
-        var at = block.Coordinates;
-        builder.AddHome(Id(home), districtId, at.x, at.y, at.z);
+        if (!AddHome(builder, home, districtId)) return;
         builder.AddAdult(Id(beaver), Id(home), JobOf(beaver, districtId, builder), districtId);
     }
 
@@ -148,11 +159,14 @@ public sealed class HousingService : ILoadableSingleton, IUnloadableSingleton, I
             change[m.From] = (change.TryGetValue(m.From, out var out1) ? out1 : 0) - 1;
             change[m.To] = (change.TryGetValue(m.To, out var in1) ? in1 : 0) + 1;
         }
-        // Whole cycles leave every home's head count unchanged; this only guards against a newborn taking the bed meanwhile.
+        // A cycle leaves every home's head count unchanged, and a chain ends in a bed that was empty at the snapshot; this
+        // guards against a newborn or a homeless beaver taking that bed meanwhile, or an adult a child's bed (the game
+        // would move an adult out of a home with more adults than adult beds).
         foreach (var pair in change)
         {
             var home = Component<Dwelling>(pair.Key);
             if (!home || home.NumberOfDwellers + pair.Value > home.MaxBeavers) return false;
+            if (pair.Value > 0 && home.NumberOfAdultDwellers + pair.Value > home.AdultSlots) return false;
         }
         try
         {

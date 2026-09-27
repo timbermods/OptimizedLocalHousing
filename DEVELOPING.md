@@ -17,8 +17,9 @@ dotnet run --project OptimizedLocalHousing.Tests -c Release -- OptimizedLocalHou
 ./package.ps1
 ```
 
-The tests cover the solver against brute force, pause/resume at every row, cycle splitting, optimality on
-random colonies with one to three districts, route queries that stay inside a district, each district solved on
+The tests cover the solver against brute force, pause/resume at every row, splitting moves into cycles and chains,
+optimality on random colonies with one to three districts, with and without empty beds, homes that can breed never
+fewer after a pass, route queries that stay inside a district, each district solved on
 its own (the same homes as a colony of that district alone, in no more ticks), the safety rules in the README,
 stale-world handling, route costs carried from one pass to the next and priced again when they come due,
 determinism between peers, save/reload at every tick of three passes (the first, the next, and the one where the
@@ -31,22 +32,33 @@ the installed game's component blacklist. Omitting the two arguments skips the c
 
 `GameAdapter.cs` is the thin bridge to the game; `PassEngine.cs` and `Assignment.cs` hold everything else. Each pass:
 
-1. **Capture.** Every housed adult beaver, its home, and its assigned workplace.
+1. **Capture.** Every housed adult beaver, its home, and its assigned workplace, and every usable home with an
+   empty bed.
 2. **Price.** For every workplace, real route costs (`Accessible.FindRoadPath`, so ziplines and stairs count)
    from the 32 nearest homes in its district. Homes in other districts are never queried, because the game's
    route search never leaves a district. Homes farther away are estimated, and any move to one is re-checked
    with a real route before it is allowed.
-3. **Solve.** The optimal way to reassign the adults to the beds that adults occupy today (the Hungarian
-   algorithm). Nobody moves between districts, so each district is solved on its own, one after another. In a
+3. **Solve.** The optimal way to reassign the adults to the district's beds: the ones adults occupy today and the
+   empty ones (the Hungarian algorithm, with more beds than adults). Children keep their beds. As in the game, a
+   third of a home's beds (rounded down) are for children and the rest for adults, and the game moves an adult out of
+   a home with more adults than adult beds. So the empty beds an adult may take are the free beds, but no more than
+   the adult beds left (`HomeRules.FreeForAdults`). Nobody moves between districts, so each district is solved on its own, one after another. In a
    colony with several districts that takes far fewer ticks and far less memory than solving them as one (47 solve
    ticks instead of 157 for four districts of 300 adults), and reaches the same optimum.
 4. **Verify.** Every proposed move is re-priced with fresh routes. A whole cycle of moves is dropped if it would
-   leave a beaver who can reach work today unable to, and each cycle must save at least half a route-cost unit in
-   total. The fresh costs of homes beyond the 32 nearest are remembered in place of estimates, so a move that was
+   leave a beaver who can reach work today unable to, and each cycle or chain must save at least half a route-cost
+   unit in total. A chain is also dropped if it would leave the colony fewer homes that can breed. The rule is the
+   Folktails' (`ProcreationHouse`, `HomeRules.CanBreed`): at least two adults, a free bed, and fewer children than
+   the home's child beds and than half its adults, rounded down. The game then rolls an 18.75% chance each time an
+   adult comes home. The solver doesn't know this rule, so a chain it drops is proposed again the next day
+   and dropped again, until the colony changes. The fresh costs of homes beyond the 32 nearest are remembered in place of estimates, so a move that was
    turned down is not proposed again every day (anything proposed is still re-priced first). A remembered cost is
    used for seven passes. The seventh prices it again, and keeps it, if one of that workplace's workers lives in
    the home or if there was no route (so a road that comes back is noticed); otherwise it lapses to the estimate.
-5. **Apply.** Moves are applied as whole cycles (A takes B's bed, B takes C's, C takes A's), in one game tick.
+5. **Apply.** Moves are applied as whole cycles (A takes B's bed, B takes C's, C takes A's) or chains (A takes an
+   empty bed, B takes A's, C takes B's), in one game tick. A cycle keeps every home's head count; a chain frees a bed
+   where it starts and fills one where it ends. If the game has filled that empty bed since the snapshot, the chain
+   is skipped as stale.
 
 Each beaver gets a one-route-cost-unit bonus for staying put (`StayBonus`), so a rearrangement must save at least one
 unit for every beaver it moves.
