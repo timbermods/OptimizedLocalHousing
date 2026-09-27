@@ -65,7 +65,7 @@
   <h2 id="steps">Step by step</h2>
   <ol class="steps">
     <li><strong>Back up your save</strong><p>Copy the save you want to use from <code>Documents\Timberborn\Saves</code>.</p></li>
-    <li><strong>Download the mod</strong><p><a class="btn btn-primary" href="https://github.com/timbermods/OptimizedLocalHousing/releases/latest" data-release-href="download"><span>Download <span data-release="version">1.1.1</span></span></a></p><p>Get <a href="https://github.com/timbermods/OptimizedLocalHousing/releases/latest" data-release-href="download"><code><span data-release="asset-name">OptimizedLocalHousing-v1.1.1.zip</span></code></a> from the <a href="https://github.com/timbermods/OptimizedLocalHousing/releases/latest" data-release-href="notes">release page</a>. It's under <strong>Assets</strong>, not "Source code". The mod isn't on the Steam Workshop.</p></li>
+    <li><strong>Download the mod</strong><p><a class="btn btn-primary" href="https://github.com/timbermods/OptimizedLocalHousing/releases/latest" data-release-href="download"><span>Download <span data-release="version">1.2.0</span></span></a></p><p>Get <a href="https://github.com/timbermods/OptimizedLocalHousing/releases/latest" data-release-href="download"><code><span data-release="asset-name">OptimizedLocalHousing-v1.2.0.zip</span></code></a> from the <a href="https://github.com/timbermods/OptimizedLocalHousing/releases/latest" data-release-href="notes">release page</a>. It's under <strong>Assets</strong>, not "Source code". The mod isn't on the Steam Workshop.</p></li>
     <li><strong>Close Timberborn</strong><p>Make sure the game is fully closed before you copy files into its Mods folder.</p></li>
     <li><strong>Extract into your Mods folder</strong><p>Extract the ZIP into <code>Documents\Timberborn\Mods</code>. You should get one <code>OptimizedLocalHousing</code> folder, as in the <a href="#layout">layout below</a>.</p></li>
     <li><strong>Enable it and restart</strong><p>Start Timberborn and open <strong>Mods</strong> from the main menu. Tick <strong>Optimized Local Housing</strong>, then restart the game when it asks.</p></li>
@@ -104,7 +104,7 @@
   <ol>
     <li>Quit the game, then open <code>%USERPROFILE%\AppData\LocalLow\Mechanistry\Timberborn\Player.log</code>. If you have already restarted, the previous session is in <code>Player-prev.log</code>.</li>
     <li>Search for <code>[OptimizedLocalHousing]</code>. You should see this at startup:
-<pre><code class="log-line">[OptimizedLocalHousing] <span data-release="version">1.1.1</span> loaded.</code></pre></li>
+<pre><code class="log-line">[OptimizedLocalHousing] <span data-release="version">1.2.0</span> loaded.</code></pre></li>
     <li>After each pass you should see a summary line. On a colony of a few hundred beavers, a pass takes about 90 seconds to two minutes at normal speed. Here is a real one; your numbers will differ:
 <div class="passline">
           <code class="pl-raw">[OptimizedLocalHousing] Pass 26: 356 adults, 104 homes, 167 workplaces; 5354 route queries over 182 ticks; 2 move cycles applied (0 rejected, 0 stale), 0 disconnected commutes repaired, route cost saved 177.</code>
@@ -129,7 +129,7 @@
 
   <h2 id="checksum">Verify the download (optional)</h2>
   <p>In PowerShell, from the folder you downloaded to:</p>
-<pre><code>Get-FileHash .\<span data-release="asset-name">OptimizedLocalHousing-v1.1.1.zip</span> -Algorithm SHA256</code></pre>
+<pre><code>Get-FileHash .\<span data-release="asset-name">OptimizedLocalHousing-v1.2.0.zip</span> -Algorithm SHA256</code></pre>
   <p>The hash should be:</p>
 <pre><code><span data-release="sha256">cc6b905d0021c3119f15a85186d6a7197e7955bed890d0134d0c6a2f2f654059</span></code></pre>
   <p>The same hash is in the <code>SHA256SUMS</code> file attached to the release.</p>

@@ -4,7 +4,7 @@ A Timberborn 1.1 mod that moves adult beavers into the homes that give the colon
 Beds are limited, so not everyone can live next to work. Once a day, the mod works out the arrangement where the
 whole colony walks the least, and moves the beavers that need moving.
 
-Version **1.1.1**. <!-- latest -->
+Version **1.2.0**. <!-- latest -->
 
 **Website:** https://timbermods.github.io/OptimizedLocalHousing/ (install guide, troubleshooting, FAQ)
 
