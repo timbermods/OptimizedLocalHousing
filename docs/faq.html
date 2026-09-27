@@ -63,7 +63,7 @@
 
   <details class="q" id="does-it-have-settings">
     <summary>Does it have settings?</summary>
-    <div class="answer" data-release-pinned="1.1.1"><p>No. There is no menu and nothing to set. The tuning constants are in the source for people who rebuild the mod; see <a href="https://github.com/timbermods/OptimizedLocalHousing/blob/main/DEVELOPING.md#tuning-constants">DEVELOPING.md</a>.</p></div>
+    <div class="answer" data-release-pinned="1.2.0"><p>No. There is no menu and nothing to set. The tuning constants are in the source for people who rebuild the mod; see <a href="https://github.com/timbermods/OptimizedLocalHousing/blob/main/DEVELOPING.md#tuning-constants">DEVELOPING.md</a>.</p></div>
   </details>
 
   <details class="q" id="what-is-a-move-cycle">
@@ -99,10 +99,10 @@
   </details>
 
   <details class="q" id="vacant">
-    <summary>Why doesn't it fill empty beds, or let homes end up with different numbers of adults?</summary>
+    <summary>Does it use empty beds?</summary>
     <div class="answer">
-      <p>We tested it, and it isn't worth it. On the real 266-beaver colony we replayed, letting homes change their number of adults shortened the average commute by only about 4% (24.0 to 23.1). But homes able to have a baby fell from 11 to 1, and keeping those baby beds free erased the gain.</p>
-      <p>So every home keeps its adult count, and empty beds are left for the game and for babies. That was one colony with a straight-line stand-in for route cost, so others will differ.</p>
+      <p>Yes. An adult moves into an empty bed when that shortens the colony's total walk, so a home's number of adults can change.</p>
+      <p>It takes only adult beds: the game keeps a third of each home's beds for kits. A move is turned down if it would leave fewer homes able to have a kit.</p>
     </div>
   </details>
 
@@ -111,7 +111,7 @@
   <details class="q" id="breeding">
     <summary>Does it affect breeding?</summary>
     <div class="answer">
-      <p>It's built not to. Every home keeps the same number of adults and children never move, so each home keeps the same free beds and the same chance of a birth. Only <em>which</em> adults live there changes.</p>
+      <p>It's built to protect it. Children never move, and adults never take a kit's bed. A move is turned down if it would leave fewer homes able to have a kit: the game needs two adults, a free bed and room for another child.</p>
     </div>
   </details>
 
@@ -144,7 +144,7 @@
       <ul>
         <li><a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3438044391">Housing Optimize</a> unassigns everyone at the start of each day and refills homes first-come-first-served, nearest first. Its author notes the result isn't guaranteed to be the best.</li>
         <li><a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3663421750">Commute Balancer</a> works gradually over days. It moves a beaver to a closer empty home, or swaps when the benefit outweighs the other beaver's inconvenience.</li>
-        <li><strong>Optimized Local Housing</strong> solves each district exactly, once a day, for the smallest total commute. Every home keeps its number of adults.</li>
+        <li><strong>Optimized Local Housing</strong> solves each district exactly, once a day, for the smallest total commute. It moves adults into empty beds too, but never so that fewer homes can have a kit.</li>
       </ul>
       <p>Both have thousands of subscribers and far more real-world mileage; this one is newer. <a href="index.html#compare">The comparison on the home page</a> has one replay's numbers.</p>
     </div>
@@ -188,7 +188,7 @@
 
   <details class="q" id="is-it-stable">
     <summary>Is it stable?</summary>
-    <div class="answer" data-release-pinned="1.1.1"><p>Yes. The code the stable release started from ran 16 passes in a row in a live game, including a hosted co-op session, with no errors, warnings or rollbacks. This release's newer changes are covered by automated tests but haven't been played in a live game yet. See <a href="index.html#status">what is tested and what isn't</a>.</p></div>
+    <div class="answer" data-release-pinned="1.2.0"><p>Yes. The code the stable release started from ran 16 passes in a row in a live game, including a hosted co-op session, with no errors, warnings or rollbacks. This release's newer changes are covered by automated tests but haven't been played in a live game yet. See <a href="index.html#status">what is tested and what isn't</a>.</p></div>
   </details>
 
   <details class="q" id="how-do-i-report-a">

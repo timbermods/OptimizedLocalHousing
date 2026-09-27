@@ -22,10 +22,11 @@ The website for **Optimized Local Housing** (https://github.com/timbermods/Optim
 that, once a day, moves adult beavers into the homes that give the colony the **shortest total commute** between home
 and assigned workplace. Beds are limited, so not everyone can live next to work; the mod solves that exactly (an
 optimal assignment, the Hungarian algorithm, one district at a time) instead of nudging beavers one swap at a time.
-Every home keeps the same number of adults and children never move, so breeding is untouched.
+Adults can move into empty beds, but only adult beds, and never in a way that leaves fewer homes able to have a kit.
+Children never move.
 
 Success, in order:
-1. **Understand it:** the visitor grasps that it rearranges the adults already housed (it doesn't fill empty beds or
+1. **Understand it:** the visitor grasps that it rearranges the adults already housed, into empty beds too (it doesn't
    build anything), that it minimizes the colony's total, not each beaver's walk, and that breeding and children are
    safe. They download the right file.
 2. **Install it right:** the `OptimizedLocalHousing-vX.Y.Z.zip` under Assets (not "Source code"), game closed,
@@ -40,11 +41,12 @@ Success, in order:
 
 - **Versus the base game:** by the look of the game's code, the built-in assigner hands out beds without asking where
   a beaver works. This mod rearranges the adults already housed so the colony's total home-to-work route cost is as
-  small as the rules allow. It works alongside the game's assigner, which still fills vacant beds.
+  small as the rules allow, moving adults into empty adult beds too. It works alongside the game's assigner, which
+  still houses newcomers and kits.
 - **Versus Bobingabout's Housing Optimize and Commute Balancer** (as their Workshop pages describe them): Housing
   Optimize unassigns everyone once a day and refills first-come-first-served, nearest first; Commute Balancer works
-  gradually over days. This mod solves each district exactly, once a day, keeps every home's adult count, and spreads
-  the work over ticks. Say it truthfully: in one replay a first-come-first-served model averaged 25.6 against 24.1 for
+  gradually over days. This mod solves each district exactly, once a day, never leaves fewer homes able to breed, and
+  spreads the work over ticks. Say it truthfully: in one replay a first-come-first-served model averaged 25.6 against 24.1 for
   this mod, but that was a model with a straight-line stand-in, not a benchmark of either mod. Those mods have
   thousands of subscribers and far more real-world mileage; this one is newer. Never claim "the best housing mod".
   They must not run together: this mod turns itself off if either is enabled.
@@ -52,11 +54,11 @@ Success, in order:
 
 ## Operating Context
 
-- **Current release: v1.1.1** (published 2026-09-22), a **stable** release marked Latest on GitHub. A maintenance
-  release: the conflict check covers only Housing Optimize and Commute Balancer; passes and saved data are unchanged
-  from 1.1.0. Release assets: `OptimizedLocalHousing-v1.1.1.zip` and `OptimizedLocalHousing-v1.1.1-SHA256SUMS.txt`
-  (ZIP SHA-256 `cc6b905d0021c3119f15a85186d6a7197e7955bed890d0134d0c6a2f2f654059`). Earlier: v1.1.0, v1.0.1, v1.0.0,
-  and the v0.1.0 preview (pre-release).
+- **Current release: v1.2.0** (published 2026-09-27), marked Latest on GitHub. Adults can move into empty adult beds;
+  a move that would leave fewer homes able to breed is turned down; children never move. Release assets:
+  `OptimizedLocalHousing-v1.2.0.zip` and `OptimizedLocalHousing-v1.2.0-SHA256SUMS.txt` (ZIP SHA-256
+  `1bae3d47dad8801712d4b73656e312036ec84f5527f72203a5907b8b33a21a3b`). Earlier: v1.1.1, v1.1.0, v1.0.1, v1.0.0, and
+  the v0.1.0 preview (pre-release).
 - **Game:** Timberborn 1.1, built against **1.1.2.4**, manifest minimum **1.1.0.0**. A future game update could break
   it. Checked on Windows only.
 - **Requirements:** none. Mod name in the Mods menu: **Optimized Local Housing**; mod ID `Kyler.OptimizedLocalHousing`.
@@ -69,7 +71,7 @@ Success, in order:
   BeaverBuddies warns at join time when mod versions differ.
 - **In-game settings players meet:** none. No menu, no UI, no options. The tuning constants (`NearHomes`,
   `QueriesPerTick` in `PassEngine.cs`; `StayBonus` in `Assignment.cs`) are in the source for people who rebuild.
-- **What players see:** beavers change homes; one log line at startup (`[OptimizedLocalHousing] 1.1.1 loaded.`) and
+- **What players see:** beavers change homes; one log line at startup (`[OptimizedLocalHousing] 1.2.0 loaded.`) and
   one per pass. A pass starts as soon as the game ticks on a save the mod hasn't seen, then at the start of every
   in-game day; it takes roughly 150 to 200 ticks on a colony of a few hundred beavers (about 90 seconds to two minutes
   at normal speed). Other log messages: `Disabled because another housing assignment mod is enabled`, `Saved state
@@ -101,10 +103,10 @@ Success, in order:
     and `data-asset="^OptimizedLocalHousing-v[\d.]+\.zip$"`.
   - Hand-written fallbacks must stay working: the download links (`data-release-href="download"`) point at
     `/releases/latest`, the footer's Latest release link carries `data-release-href="notes"`, and every
-    `data-release` span (`version`, `tag`, `asset-name`, `sha256`) holds the current value written by hand (1.1.1, the
+    `data-release` span (`version`, `tag`, `asset-name`, `sha256`) holds the current value written by hand (1.2.0, the
     ZIP name, the hash above). Update them at each release, since `release.js` only replaces them when the lookup
     works.
-  - `data-release-pinned="1.1.1"` marks text written for one version (the home status notice and section, FAQ
+  - `data-release-pinned="1.2.0"` marks text written for one version (the home status notice and section, FAQ
     settings and stability answers); bump it when the text is re-checked for a new release, or `release.js` appends a
     "written for" note.
   - `404.html` loads its stylesheet, favicon and links by absolute `/OptimizedLocalHousing/` paths.
@@ -122,8 +124,9 @@ Success, in order:
     maintainer's colony (about 350 adults, 104 homes, 167 workplaces) with no errors, warnings or rollbacks, including
     one hosted co-op session with a second player (about 11,000 ticks, 15 passes, no desync in the host's log).
   - **Not played in game:** 1.1.0's changes (same-district pricing, remembered route costs, per-district solve,
-    larger budgets for large colonies) and 1.1.1. They are covered by automated tests only. No live two-player session
-    has been played on 1.1.0 or 1.1.1; the client's side, joining and rehosting are untested.
+    larger budgets for large colonies), 1.1.1, and 1.2.0's moves into empty beds. They are covered by automated tests
+    only. No live two-player session has been played on 1.1.x or 1.2.0; the client's side, joining and rehosting are
+    untested.
   - Never measured: frame-time impact (the per-tick work is bounded, but a real path query hasn't been timed, nor the
     larger budgets of very large colonies). Iron Teeth untested (developed on Folktails). Only Windows. BeaverBuddies
     Timber Together was audited against the mod's code, not played with it.
@@ -133,8 +136,10 @@ Success, in order:
   - Present it as "stable means this evidence plus the automated tests, not that every situation has been tried",
     without scaring people off.
 - **How the shipped site states these facts (keep it this way):**
-  - The home page's Tested list says "41 automated checks: 40 run on every change, and one runs against the installed
-    game" (CI runs 40; the compiled-adapter check runs only locally with the game).
+  - The home page's Tested list says "46 automated checks: 45 run on every change, and one runs against the installed
+    game" (CI runs 45; the compiled-adapter check runs only locally with the game).
+  - The replay results were made with every home keeping its number of adults (before moves into empty beds), and
+    the site says so.
   - The home status, `install.html` (Multiplayer), the FAQ multiplayer and "Is it stable?" answers and the
     troubleshooting multiplayer entry say the live session ran the code the stable release started from, and that
     this release hasn't been played live by two players. None of them walks through version history.
@@ -165,23 +170,24 @@ Success, in order:
   screenshots.
 - **Real data:** the replay results above (the bar chart and its table); the live log figures (16 passes, about 183
   ticks and 5,350 route queries each, 0 to 4 cycles); two real `Pass` lines from the maintainer's log (Pass 26 and
-  Pass 34; Pass 26 is quoted on the home and install pages, Pass 34 on the troubleshooting page); the FAQ's measured "let adult counts change" experiment
-  (average 24.0 to 23.1, about 4%, while homes able to have a baby fell from 11 to 1; one colony, straight-line
-  stand-in); the tick and memory figures in the README (47 vs 157 solve ticks; 480 vs 1,118 ticks for 1,600 adults).
+  Pass 34; Pass 26 is quoted on the home and install pages, Pass 34 on the troubleshooting page); a measured "let adult counts change" experiment with no
+  breeding rule (average 24.0 to 23.1, about 4%, while homes able to have a baby fell from 11 to 1; one colony,
+  straight-line stand-in; no longer quoted on the site); the tick and memory figures in the README (47 vs 157 solve ticks; 480 vs 1,118 ticks for 1,600 adults).
 - **Does not exist, and must not be faked:** in-game screenshots or clips of the mod at work (there is no UI to
   capture; a before/after of a real colony would need the maintainer's own shots, so leave a marked slot), download
   counts, player numbers, testimonials, reviews, press, benchmarks against the other housing mods, frame-time numbers,
-  Iron Teeth or non-Windows results, and any 1.1.x live-play results.
+  Iron Teeth or non-Windows results, and any 1.1.x or 1.2.x live-play results.
 
 ## Product Principles
 
 1. **Show the mechanism, then the proof.** One total, limited beds, an exact solve: the diagrams explain it, the
    replay numbers back it, and every number carries its caveat.
-2. **Breeding and families first.** Adult counts per home never change and children never move; say it early, because
+2. **Breeding and families first.** No move leaves fewer homes able to have a kit, adults never take a kit's bed, and
+   children never move; say it early, because
    it's the first worry of anyone who has used a housing mod.
 3. **Nothing to set, so the log is the interface.** Install right, let the game run, read the `Pass` line; the
    troubleshooting page is built around those messages.
 4. **Fair to the neighbours.** Compare with Housing Optimize and Commute Balancer by what they say they do, admit
    their mileage, never claim to be the best.
-5. **Honest about what's been played.** The 1.0 code ran live, 1.1.x is tested but not played, and frame time is
+5. **Honest about what's been played.** The 1.0 code ran live, 1.1.x and 1.2.x are tested but not played, and frame time is
    unmeasured; said plainly, as the mod is now, with the version history left to the changelog.

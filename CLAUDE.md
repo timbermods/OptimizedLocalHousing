@@ -116,7 +116,7 @@ text and the player docs follows these rules.
   in the README changelog and the GitHub release notes. Upgrade steps players need are the only exception.
 - The played and not-played status matches the README exactly: the 1.0 code (released as 1.0.0) ran 16 passes in a
   live game, including one hosted co-op session; 1.1.0's changes and anything since are covered by automated tests but
-  not played; no live two-player session on 1.1.x; frame time, Iron Teeth, non-Windows and Timber Together live play untested.
+  not played; no live two-player session on 1.1.x or 1.2.x; frame time, Iron Teeth, non-Windows and Timber Together live play untested.
   Replay numbers always say "straight-line stand-in". Never invent numbers, reviews or screenshots.
 - Keep the credits: MIT, maintained by Timbermods; Housing Optimize and Commute Balancer are Bobingabout's. Keep the
   "unofficial, not affiliated with or endorsed by Mechanistry" line in every footer.
@@ -139,7 +139,7 @@ When asked to "update the website for the latest release, consistent with the de
      `"sha256"` (install `#checksum`; take the hash from the release's SHA256SUMS asset).
    - `data-release-pinned`: index `.status-note` and `#status` head, FAQ `#does-it-have-settings` and `#is-it-stable`;
      bump after re-checking the text.
-   - Status: index `.status-note`, `#status` Tested / Not yet lists (incl. "41 automated checks: 40 run on every
+   - Status: index `.status-note`, `#status` Tested / Not yet lists (incl. "46 automated checks: 45 run on every
      change": match the test output), install `#multiplayer`, FAQ `#does-it-work-in-multiplayer` and `#is-it-stable`,
      troubleshooting `#multiplayer`.
    - Requirements and game version (built against 1.1.2.4, minimum 1.1.0.0): install `#requirements`, FAQ
